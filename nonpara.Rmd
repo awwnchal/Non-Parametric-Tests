@@ -1,0 +1,1349 @@
+---
+title: "finalfallhw"
+output: html_document
+---
+#question 1
+
+
+#a) 10 points Can we infer that those who say will return assess each category
+#higher than those who will not return? The meaning of this question is:
+#For each of the four questions on the survey, can we infer that those who
+#say will return rate each category (question) higher than those who will not
+#return?
+
+#b) 10 points Is there sufficient evidence to infer that those who make positive
+#comments, negative and no comments differ in their assessments
+#of each category?
+Q1:
+Hypothesis:
+\begin{align*}
+H_{o}: \text{The 2 population locations are the same} \\
+H_{1}: \text{The location of population 1 is right to  the location of population 2}
+\end{align*}
+
+Q1 b):
+Hypothesis:
+\begin{align*}
+H_{o}: \text{The 3 population locations are the same} \\
+H_{1}: \text{At least the location of 2 populations differ}
+\end{align*}
+```{r}
+q1 <- read.csv("/Users/anchalchaudhary/Downloads/Automobile Service Center Ratings.csv")
+r <- as.factor(q1$Return) 
+quality <- as.integer(q1$Quality)
+fairness <- as.integer(q1$Fairness)
+guarantee <- as.integer(q1$Guarantee)
+checkout <- as.integer(q1$Checkout)
+
+boxplot(quality ~ r)
+#population 1 - (yes) will return , populattion 2 - will not return(no)
+
+#null : the two population location are same
+#alt : the location of population 1 is to the right to the location of population 2
+wilcox.test(quality ~ r, alt ="greater", paired = FALSE, exact = FALSE, conf.level = 0.95)
+#fail to reject null
+wilcox.test(fairness ~ r, alt ="greater", paired = FALSE, exact = FALSE, conf.level = 0.95)
+#fail to reject null
+wilcox.test(guarantee~ r, alt ="greater", paired = FALSE, exact = FALSE, conf.level = 0.95)
+#fail to reject null
+wilcox.test(checkout ~ r, alt ="greater", paired = FALSE, exact = FALSE, conf.level = 0.95)
+#fail to reject null
+
+#part b 
+#population 1 - positive , population 2 - negative, population 3 - no comments 
+#null: the location of all three populations are same 
+#alt: at lease two population locations differ
+kruskal.test(quality ~ factor(q1$Comment)) #reject null #differ in their assessment of quality 
+kruskal.test(fairness ~ factor(q1$Comment)) #do not differ
+kruskal.test(guarantee ~ factor(q1$Comment)) #do not differ 
+kruskal.test(checkout ~ factor(q1$Comment)) #differ
+
+
+```
+#question 2
+Q2:
+Hypothesis:
+\begin{align*}
+H_{o}: \text{The 3 population locations are the same} \\
+H_{1}: \text{At least the location of 2 populations differ}
+\end{align*}
+```{r}
+#not independent - can't use kruskal wallis 
+#three populations- 3 recipe's
+#ordinal data 
+#null: the location of all three populations are the same
+#at least two population differ 
+#experimental design : Block design 
+q2 <- read.csv("/Users/anchalchaudhary/Downloads/Soft Drink Recipe.csv")
+#q2$Person <- seq.int(nrow(q2)) 
+#install.packages("reshape2")
+library(reshape2)
+
+reviewsstacked <- melt(q2, id.vars = "Person")
+names(reviewsstacked) <- c("Person", "Recipe", "Rating")
+p <- factor(reviewsstacked$Person)
+r <- factor(reviewsstacked$Recipe)
+R <- reviewsstacked$Rating
+
+#install.packages("stats")
+library(stats)
+friedman.test(R, r, p)
+#p value < 0.05, reject null
+
+
+#post hoc - 
+
+
+```
+#question 3
+Hypothesis:
+\begin{align*}
+H_{0}: \rho_{s} = 0 \\
+H_{1}: \rho_{s} > 0
+\end{align*}
+# If one works longer hours (HRS1) does the chances of losing one’s job
+#become less likely? Conduct an appropriate statistical test to
+#answer the question. #(JOBLOSE: 1 = Very likely, 2 = Fairly likely, 3 = Not too likely, 4
+#= Not likely) 
+```{r }
+q3 <- read.csv("/Users/anchalchaudhary/Downloads/Job Loss.csv")
+#correlation between working hours and joblose 
+#ordinal data & interval
+
+#null hypothesis: rho(ps) =0
+#alternative: rho(ps) not 0
+
+cor.test(x= q3$HRS1, y= q3$JOBLOSE, method = "spearman",alternative = "greater")
+# positive correlation 
+#significant 
+
+```
+#question 4
+Hypothesis:
+\begin{align*}
+H_{o}: \text{The population locations are the same} \\
+H_{1}:  \text{The location of population 1 is to the right of the location of population 2}
+\end{align*}
+```{r}
+q4 <- read.csv("/Users/anchalchaudhary/Downloads/Ice Cream Comparison.csv")
+#ordinal 
+#dependent 
+#sign test
+#null: the two population locations are same
+#alt : the location of population 1 is to the right of the location of population 2
+library(dplyr)
+positive_Diff <- q4 %>%
+  mutate(diff = q4$European - q4$Domestic) %>%
+  filter(diff > 0)%>%
+  summarise(n = n()) %>%
+  pull(n)
+
+zero_Diff <- q4%>%
+   mutate(diff = q4$European - q4$Domestic) %>%
+  filter(diff == 0)%>%
+  summarise(n = n()) %>%
+  pull(n)
+
+n_excl_zero_diff <- q4%>%
+  summarise(x= n()- zero_Diff)%>%
+  pull(x)
+
+binom.test(x=positive_Diff, n= n_excl_zero_diff, alternative = "greater", conf.level = 0.95)
+
+#pvalue < 0.10 significant
+#reject null
+#european brand is preferred
+
+
+```
+#question 5
+Q5:
+Hypothesis:
+\begin{align*}
+H_{o}: \text{The population locations are the same} \\
+H_{1}:  \text{The location of population 1 is different from the location of population 2}
+\end{align*}
+
+$H_{0}:$$ The difference in two population is normally distributed$
+
+$H_{1}:$$ The difference in two population is not normally distributed$
+```{r}
+q5 <- read.csv("/Users/anchalchaudhary/Downloads/Machine Selection.csv")
+#matched pair 
+#interval data - have to check for normality 
+diff <- q5$Machine.1-q5$Machine.2
+hist(diff)
+#As we can conclude from the histogram, clearly normality requirement is not satisfied, indicating that we should employ wilcoxon signed rank sum test
+differences <- q5%>%
+  mutate(diff = q5$Machine.1-q5$Machine.2)%>%
+  pull(diff)
+hist(differences)
+
+#Wilcoxon signed rank sum test 
+#null : the two population locations are the same
+#alt : the location of population 1 is different from location of population 2.
+library(reshape2)
+
+q5stacked <- melt(q5, id.vars = "Key")
+names(q5stacked) <- c("Key", "Machine", "Time")
+
+wilcox.test(q5stacked$Time ~ q5stacked$Machine, alt ="two.sided", paired = TRUE, exact = FALSE, conf.level = 0.95)
+#p value < 0.05
+#significant, we reject null
+
+#Wilcoxon signed rank sum test 
+#null : the two population locations are the same
+#alt : the location of population 1(machine 1) is left to location of population 2(machine 2).
+wilcox.test(q5stacked$Time ~ q5stacked$Machine, alt ="less", paired = TRUE, exact = FALSE, conf.level = 0.95)
+#p value < 0.05 #reject null
+#machine 1 is left to location of machine 2 , machine 1 takes less time so he should choose machine 1. 
+```
+#questio 6
+#It is often useful for companies to know who their customers are and how they
+#became customers. In a study of credit card use, random samples were drawn
+#of cardholders who applied for the credit card and credit cardholders who were
+#contacted by telemarketers or by mail. The total purchases made by each last
+#month were recorded. Can we conclude at the 5% significance level from these
+#data that differences exist on average between the two types of customers?
+#Navigate the flowchart and choose the appropriate statistical test to run. The
+#data set is available on the CSV file CreditcardHolders.
+Hypothesis:
+\begin{align*}
+H_{o}: \sigma_{1} = \sigma_{2} \\
+H_{1}:  \sigma_{1} \neq \sigma_{2}
+\end{align*}
+
+Hypothesis:
+\begin{align*}
+H_{o}: \mu_{1} = \mu_{2} \\
+H_{1}:  \mu_{1} \neq \mu_{2}
+\end{align*}
+```{r}
+#interval data 
+#check if normality 
+q6 <- read.csv("/Users/anchalchaudhary/Downloads/CreditcardHolders.csv")
+
+#normality assessment
+
+hist(q6$Applied)
+hist(q6$Contacted)
+
+#looks like NORMAL
+
+q6_stacked <- stack(q6)
+names(q6_stacked) <- c("Credit", "Type")
+
+credit <-as.numeric(q6_stacked$Credit)
+type <- as.factor(q6_stacked$Type)
+
+model_q6 <- lm(credit ~ type)
+resids_q6 <- residuals(model_q6)
+
+nortest::ad.test(resids_q6)
+#null: data is normally distributed 
+#alt: data not normally distributed 
+# p value not significant, fail to reject null, data is normally distributed
+
+
+#variance test
+#null: equal variance
+#alt: unequal variance
+var.test(q6$Applied, q6$Contacted, 
+         ratio = 1, alternative = "two.sided")
+#unequal variance
+
+### Variances are unequal, so run unequal Variance t-test ###
+#null : mu1 = mu2
+#alter: mu1 is not equal to mu2
+t.test(q6$Applied, 
+       q6$Contacted, 
+       alternative = "two.sided", 
+       mu = 0, 
+       paired = FALSE, 
+       var.equal = FALSE)
+#pvalue 0.246<0.05, fail to reject null 
+#we can conclude at the 5% significance level from these data that differences does not exist on average between the two types of customers.
+
+
+```
+#question 7
+\begin{align*}
+H_{o}: \mu_{1} = \mu_{2} \\
+H_{1}:  \mu_{1} > \mu_{2}
+\end{align*}
+
+$H_{0}:$$ The difference in two population is normally distributed$
+
+$H_{1}:$$ The difference in two population is not normally distributed$
+```{r}
+#paird t test 
+
+q7 <- read.csv("/Users/anchalchaudhary/Downloads/AmericanDebt.csv")
+#interval paired 
+
+#As we can conclude from the histogram, clearly normality requirement is not satisfied, indicating that we should employ wilcoxon signed rank sum test
+diff_q7 <- q7 %>% 
+  mutate(diff = q7$This.Year -  q7$Last.Year) %>%
+  pull(diff)
+
+hist(diff_q7)
+#not clear
+
+#formal test for normality
+#null : data is normal 
+#alt : data is not normal
+q7_stacked <- stack(q7)
+names(q7_stacked) <- c("debt", "year")
+
+debtt <-as.numeric(q7_stacked$debt)
+ye <- as.factor(q7_stacked$year)
+
+model <- lm(debtt ~ ye)
+resids <- residuals(model)
+
+nortest::ad.test(resids)
+#pvalue > 0.05, fail to reject null
+#data is normal
+
+#paired t test 
+#null : mu1 = mu2
+#alter: mu1 is not equal to mu2
+t.test(x= q7$This.Year, y = q7$Last.Year,
+       alternative = ("greater"), paired = TRUE,
+       conf.level = 0.95)
+#pvalue > 0.05, we fail to  reject the null,  we can infer at the 5% significance
+#level that the ratios are not higher this year than last
+
+```
+#question 8 
+
+Q8 b)
+# Hypothesis:
+\begin{align*}
+H_{0} = \hat{p1} - \hat{p2} \le 0.05 \\
+H_{1} = \hat{p1} - \hat{p2} > 0.05
+\end{align*} (edited) 
+
+Q8 c)
+# Hypothesis:
+\begin{align*}
+H_{0} = \hat{p1} - \hat{p2} = 0 \\
+H_{1} = \hat{p1} - \hat{p2} \neq 0
+\end{align*}
+```{r}
+q8 <- read.csv("/Users/anchalchaudhary/Downloads/Benefits Comparison.csv")
+#two population
+#nominal
+library(dplyr)
+#part a
+#potential confounding effects are location i.e west coast and east coast, difference in cost of living, difference in demographics, difference in health plan costs etc
+
+#part b
+
+n_health <- sum(ifelse(q8$Benefit == 'Health',1,0))
+n_vacation <- sum(ifelse(q8$Benefit == 'Vacation',1,0))
+n_health_retain <- sum(ifelse(q8$Benefit == 'Health' & q8$Retention == 1,1,0))
+n_vacation_retain <- sum(ifelse(q8$Benefit == 'Vacation' & q8$Retention == 1,1,0))
+p_hat1 <- n_health_retain/n_health
+p_hat2 <- n_vacation_retain/n_vacation
+diff_ <- p_hat1 - p_hat2
+se <- sqrt((p_hat1*(1-p_hat1)/n_health + p_hat2*(1-p_hat2)/n_vacation))
+z <- ((p_hat1 - p_hat2)-0.05)/se
+p_value <- pnorm(q = z, mean = 0,sd = 1,lower.tail = FALSE)
+p_value
+print('The p-value is higher than any significance level. Hence, we fail to reject the null hypothesis and conclude that health benefits does not increase retention by more than 5%% as compared to vacation benefits.')
+
+#n: diff =0.05
+#:alt: >0.05
+
+
+#part c
+
+health <- sum(q8$Benefit=="Health" & q8$Retention == "1")
+
+vacation <- sum(q8$Benefit=="Vacation" & q8$Retention == "1")
+
+y <- prop.test(c(health, vacation), 
+          c(125, 140), alternative = "two.sided", 
+          conf.level = 0.95, correct = FALSE)
+y
+sprintf(" p value > 0.05, not signficant, cannot reject the null hypothesis. There is NO statistically significant difference in retention rates between the benefit plans")
+```
+
+#9
+Q9:
+Hypothesis:
+\begin{align*}
+H_{0} = \text{The data is homoscedastic} \\
+H_{1} = \text{The data is heteroscedasticity}
+\end{align*}
+```{r}
+q9 <- read.csv("/Users/anchalchaudhary/Downloads/Wage.csv")
+
+
+model <- lm(q9$Wage ~ q9$Educ + q9$Exper)
+summary(model)
+
+resids <- residuals(model)
+abs_resids <- abs(resids)
+
+#null: rho =0
+#alt: rho not zero 
+cor.test(x = q9$Educ, y = abs_resids, 
+         alternative = "greater",
+         method = "spearman", 
+         exact = FALSE)
+#pvalue <0.05, Hihgly significant, reject null, rho is not zero, we conclude that hetero exists
+
+
+cor.test(x = q9$Exper, y = abs_resids, 
+         alternative = "greater",
+         method = "spearman", 
+         exact = FALSE)
+##pvalue <0.05, Highly significant, reject null, rho is not zero, we conclude that hetero exists
+
+```
+#10
+#For the data given in the CSV file Compensation, regress average compensation
+#Y on average productivity X, treating employment size as the unit of observation.
+#a) From the preceding regression obtain the residuals ˆui
+#b) Following the Park test, regress ln ˆui
+#on ln Xi and verify if there is heteroscedasticity problem
+#c) Following the Glejser approach, regress |uˆi| on Xi and then regress |uˆi| on√Xi
+#Verify if there is heteroscedasticity problem.
+#d) Use the Spearman rank correlation test to verify if there is a heteroscedasticity problem.
+
+Q10 b)
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = 0 \\
+H_{1} = \beta{2} \neq 0
+\end{align*}
+
+Q10 c)
+Hypothesis:
+\begin{align*}
+H_{0} = \text{The data is homoscedastic} \\
+H_{1} = \text{The data is heteroscedasticity}
+\end{align*}
+
+10 d)
+Hypothesis:
+\begin{align*}
+H_{0} = \text{The data is homoscedastic} \\
+H_{1} = \text{The data is heteroscedasticity}
+\end{align*}
+```{r}
+q10 <- read.csv("/Users/anchalchaudhary/Downloads/Compensation.csv")
+y <- subset(q10, q10$X == "Average compensation")
+x <- subset(q10, q10$X == "Average productivity")
+ystack <- stack(y)
+ystack = ystack[-1,]
+xstack <- stack(x)
+xstack = xstack[-1,]
+comp=as.numeric(ystack$values)
+ prod=as.numeric(xstack$values)
+model <- lm(comp ~ prod)
+summary(model)
+r <- residuals(model)
+resids_sq <- r^2
+ln_resids_sq <- log(resids_sq)
+
+### avg comp = beta0 + beta1*avgprod
+
+### Step 3: Run the  regression against the log of X variable
+model <- lm(ln_resids_sq ~ log(prod))
+summary(model)
+
+### The model is ln(Resids_sq) = 32.8 - 2.477LN(prod)
+### The p-value for Beta1 is 0.5 > 0.05 (insignificant) , fail to reject null
+
+### H0: B1 = 0 (No heteroscedasticity)
+### H1: B1 =/= 0 (there is heteroscedasticity)
+
+### There is no evidence of heteroscedasticity
+
+#part b glejser test
+#############
+###  Obtain the residuals and store absolute values of the residuals
+abs_resids <- abs(r)
+
+### Step 3: Run Glejser test
+### Test 1: abs(r) = beta10 + beta1*prod
+### Test 2: abs(r) = beta0 + beta1*sqrt(prod)
+
+
+### Test 1:
+model_test_1 <- lm(abs_resids ~ prod)
+summary(model_test_1)
+### Beta1 is statistically insignificant --> fail to reject null -> no signs of heteroscedasticity
+### H0: B1 = 0 (No heteroscedasticity)
+### H1: B1 =/= 0 (there is heteroscedasticity)
+
+### Test 2: abs(r) = beta0 + beta1*sqrt(Educ)
+model_test_2 <- lm(abs_resids ~ sqrt(prod))
+summary(model_test_2)
+### Beta2 is statistically insignificant -->fail to reject null -> no signs of heteroscedasticity
+
+#part 3 spearman 
+
+#null: rho =0
+#alt: rho not zero 
+cor.test(x = prod, y = abs_resids, 
+         alternative = "greater",
+         method = "spearman", 
+         exact = FALSE)
+#p value >0.05, not significant , fail to reject null, we conclude no signs of heteroscedasticity
+
+
+```
+#11
+Question 11:
+# Parks Test:
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = 0 \\
+H_{1} = \beta{2} \neq 0
+\end{align*}
+
+# Glejser Test:
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = 0 \\
+H_{1} = \beta{2} \neq 0
+\end{align*}
+
+# WHITE'S GENERAL HETERO TEST:
+Hypothesis:
+\begin{align*}
+H_{0} = \text{The data is homoscedastic} \\
+H_{1} = \text{The data is heteroscedasticity}
+\end{align*}
+```{r}
+
+q11 <- read.csv("/Users/anchalchaudhary/Downloads/R&D.csv")
+###sales = beta0 + beta1*rd original regression  model
+model <- lm(q11$RD ~ q11$SALES)
+summary(model)
+r <- residuals(model)
+resids_sq <- r^2
+ln_resids_sq <- log(resids_sq)
+
+
+
+### part a park test : Run the regression against the log of X variable
+model <- lm(ln_resids_sq ~ log(q11$SALES))
+summary(model)
+
+### The p-value for Beta1 is 0.2 > 0.05 (insignificant) , fail to reject null
+
+### H0: B1 = 0 (No heteroscedasticity)
+### H1: B1 =/= 0 (there is heteroscedasticity)
+
+### There is no evidence of heteroscedasticity
+
+#part b Glejser test
+#############
+###  Obtain the residuals and store absolute values of the residuals
+abs_resids <- abs(r)
+
+### Step 3: Run Glejser test
+### Test 1: abs(r) = beta0 + beta1 rd
+### Test 2: abs(r) = beta0 + beta1*sqrt(rd)
+
+
+### Test 1:
+model_test_1 <- lm(abs_resids ~ q11$SALES)
+summary(model_test_1)
+### Beta1 is statistically insignificant --> fail to reject null -> no signs of heteroscedasticity
+### H0: B1 = 0 (No heteroscedasticity)
+### H1: B1 =/= 0 (there is heteroscedasticity)
+
+### Test 2: abs(r) = beta0 + beta1*sqrt(rd)
+model_test_2 <- lm(abs_resids ~ sqrt(q11$SALES))
+summary(model_test_2)
+###P VALUE < 0.05 Beta2 is statistically significant -->reject null ->  signs of heteroscedasticity
+
+#White's Test 
+# residual_sq = beta0 + beta1*rd + beta2* rd^2
+model_test_3 <- lm(resids_sq ~ q11$SALES + I(q11$SALES)^2)
+summary(model_test_3)
+
+
+## calculate the chi-squared value
+chi_sq_val <- nrow(q11)*summary(model_test_3)$r.squared
+
+### Alternatively, find the p-value
+pchisq(chi_sq_val, 2, lower.tail = FALSE)
+#p value > 0.05, we fail to  reject null
+# we fail to reject null ->no signs of heteroscedasticity 
+
+```
+#12 
+q12:
+Hypothesis:
+\begin{align*}
+H_{0} = \text{The data is homoscedastic} \\
+H_{1} = \text{The data is heteroscedasticity}
+\end{align*}
+```{r}
+
+q12 <- read.csv("/Users/anchalchaudhary/Downloads/FOC.csv")
+#informal test 
+m <- lm(q12$SALES~ q12$TIME)
+r <- residuals(m)
+rs = r^2
+p <- predict(m)
+#residuals against X
+plot(q12$TIME, r ) #shows error variance is not linearly related to X(time in this case)
+#residuals against Yhat
+plot( p, r )  #shows error variance is not linearly related to X(time in this case)
+
+
+#White's Test formal
+# residual_sq = beta0 + beta1*rd + beta2* rd^2
+#null b1=b2=0
+#alt: atleast one beta is not 0 
+model_test <- lm(rs~ q12$TIME + I(q12$TIME)^2)
+summary(model_test)
+## calculate the chi-squared value
+chi_sq_val <- nrow(q12)*summary(model_test)$r.squared
+
+### Alternatively, find the p-value
+pchisq(chi_sq_val, 2, lower.tail = FALSE)
+#pvalue <0.05, we reject null
+### we conclude Evidence of heteroscedasticity.
+
+
+
+#Transformed sales into ln sales
+time<- q12$TIME
+s <- q12$SALES
+lns <-log(s)
+m2<- lm(lns~ time)
+r2 <- residuals(m)
+rs2 = r2^2
+plot(q12$TIME, r2 )  #plot shows error variance is not linearly related to X(time in this case)
+
+#White's Test formal
+# residual_sq = beta0 + beta1*time + beta2* time^2
+#null b1=b2=0
+#alt: at least one beta is not 0 
+time<- q12$TIME
+model_test_2 <- lm(rs2~ time + I(time)^2)
+summary(model_test_2)
+
+## calculate the chi-squared value
+chi_sq_val2 <- nrow(q12)*summary(model_test_2)$r.squared
+
+### Alternatively, find the p-value
+pchisq(chi_sq_val2, 2, lower.tail = FALSE)
+#pvalue <0.05, we reject null
+### we conclude Evidence of heteroscedasticity.
+
+
+
+#predicting for week 300
+df2 <- data.frame(time = 300)
+s300<- predict(m2, df2)
+exp(s300)
+
+```
+#13
+q13: a)
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = \beta{3} = \beta{4} = 0 \\
+H_{1} = \text{At least one beta is not equal to zero}
+\end{align*}
+
+q13 b)
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = \beta{3} = \beta{4} = 0 \\
+H_{1} = \text{At least one beta is not equal to zero}
+\end{align*}
+
+d) Running the  Koenker-Bassett test
+Hypothesis:
+\begin{align*}
+H_{0} = \beta{2} = 0 \\
+H_{1} = \beta{2} \neq 0
+\end{align*}
+```{r}
+
+q13 <- read.csv("/Users/anchalchaudhary/Downloads/Woody.csv")
+
+#original regression model 
+model = lm(q13$Y ~ q13$N +q13$P + q13$I)
+
+#part a - the Breusch-Pagan test
+r = residuals(model)
+rs = r^2
+model2 = lm(rs ~ q13$N +q13$P + q13$I)
+summary(model2)
+#all the beta's are insignificant , fail to reject null, we conclude no evidence of hetero, homoscedasticity is satisfied
+#null : b1=b2=b3=0 (no hetero)
+#alt: at least one beta is not equal to zero( hetero exists)
+
+#part b
+#install.packages("lmtest")
+library(lmtest)
+bptest(model2)
+#p value > 0.05, we fail to reject null, results in part a are consistent with part b 
+
+#part c
+#whites general
+y = q13$Y
+n = q13$N
+p = q13$P
+i = q13$I
+model3 <- lm(rs ~  n + p + i + I(n^2) + I(p^2) + I(i^2) + I(n*p) + I(p*i) + I(n*i))
+summary(model3)
+
+## calculate the chi-squared value
+chi_sq_val <- nrow(q13)*summary(model3)$r.squared
+
+### Alternatively, find the p-value
+pchisq(chi_sq_val, 9 , lower.tail = FALSE)
+#pvalue <0.05, we reject null
+### we conclude Evidence of heteroscedasticity.
+#results not consistent wiht part a and b
+
+
+
+#part d
+#koenker- bassett kb test 
+### Obtain the predicted values of Wages and square them
+pred_sq <- predict(model)^2
+
+### Step 2
+model4 = lm(rs ~ pred_sq)
+summary(model4)
+#null beta1= 0 (no hetero)
+#alt: beta1 not zero (hetero exists)
+#beta1 >0.05, fail to reject null -> we conclude that there is no sign of heteroscedasticity, findings are consistent with part a,b,c
+```
+#14
+q14:
+d)
+# Parks Test
+hypothesis:
+\begin{align*}
+H_{0}: \beta_{2} = 0 \\
+H_{1}: \beta_{2} \neq 0
+\end{align*}
+```{r}
+
+q14 <- read.csv("/Users/anchalchaudhary/Downloads/EconomistSalary.csv")
+#part a
+library(tidyr)
+library(tidyverse)
+median_salary <- as.numeric(gsub(",", "", q14$Median.salary....))
+age_min <- as.numeric(substr(q14$Age..years., start = 1, stop = 2))
+age_max <- ifelse(as.numeric(gsub("\\+", "", str_sub(q14$Age..years., start= -2))) == 0, 72,
+                  as.numeric(gsub("\\+", "", str_sub(q14$Age..years., start= -2))))
+age_midpoint <- (age_min + age_max) / 2
+n_q14 <- cbind.data.frame(age_min,age_max,age_midpoint,median_salary)
+model_q14 <- lm(n_q14$median_salary ~ n_q14$age_midpoint)
+summary(model_q14)
+y = n_q14$median_salary 
+x = n_q14$age_midpoint
+
+#part b -  assuming error variance proportional to age
+y1 = y/sqrt(x)
+x1 = x/sqrt(x)
+recip = 1/sqrt(x)
+model <- lm(y1~ recip + x1)
+summary(model)
+r1 = residuals(model)
+p = predict(model)
+plot(p , r1)
+
+plot(x1, r1) #random cloud of dots, no systematic pattern - no signs of heteroscedasticity. 
+#part c assuming error variance proportional to square of age
+y2 = y/x
+x2 = x/x
+recip2 = 1/(x)
+model2 <- lm(y2 ~ recip2 + x2)
+summary(model2)
+r2 = residuals(model2)
+p2 = predict(model2)
+plot(p2 , r2)#random cloud of dots, no systematic pattern  - no signs of heteroscedasticity
+
+#part d - already made plots above
+```
+#15
+
+
+hypothesis:
+\begin{align*}
+H_{0}: \text{The data is normally distributed} \\
+H_{1}:  \text{The data is not normally distributed}
+\end{align*}
+
+hypothesis:
+\begin{align*}
+H_{0}: \beta_{2} =  \beta_{3} = 0 \\
+H_{1}: \text{at least one of the betas is non-zero}
+\end{align*}
+
+hypothesis:
+\begin{align*}
+H_{0}: \text{There is no first order autocorrelation or (error terms are independent)} \\
+H_{1}:  \text{There is a first order autocorrelation or (error terms are not independent)}
+\end{align*}
+
+
+
+hypothesis:
+\begin{align*}
+H_{0}: \text{The data is normally distributed} \\
+H_{1}:  \text{The data is not normally distributed}
+\end{align*}
+
+hypothesis:
+\begin{align*}
+H_{0}: \beta_{2} =  \beta_{3} = 0 \\
+H_{1}: \text{at least one of the betas is non-zero}
+\end{align*}
+
+hypothesis:
+\begin{align*}
+H_{0}: \text{There is no first order autocorrelation or (error terms are independent)} \\
+H_{1}:  \text{There is a first order autocorrelation or (error terms are not independent)}
+\end{align*}
+
+```{r}
+#time series data 
+q15 <- read.csv("/Users/anchalchaudhary/Downloads/SkiSales.csv")
+#original regression model
+model <- lm(q15$Tickets~ q15$Snowfall + q15$Temperature)
+r = residuals(model)
+
+#test for normality
+
+#informal test
+hist(r)
+#anderson darling formal normality test
+nortest::ad.test(r)
+#null : data is normal
+#alt: not normal 
+#p value > 0.05 , we fail to reject null, data is normally distributed
+p = predict(model)
+
+
+## test for variance
+
+#informal test 
+resid_q15_sq <- r^2
+plot(fitted(model), resid_q15_sq)
+# since the pattern doesn't follow any particular shape, so there is no hetero, variance is constant 
+
+# Formal test: KB test
+### Obtain the predicted values of Wages and square them
+pred_q15_sq <- predict(model)^2
+
+### Step 2: Run the auxiliary regression
+### Resid_sq = alpha1 + alpha2*PredictedY_sq + vi
+model_q15_kb <- lm(resid_q15_sq ~ pred_q15_sq)
+summary(model_q15_kb)
+
+# since the p value obtained (alpha2 p value) is not significant, we cannot reject the null hypothesis and conclude that the there is presence of constant variance
+
+
+#Checking for independence using DurbinWatson
+
+### The p-value is very small, indicating there is an evidence of
+### positive first-order autocorrelation.
+
+### H0: No evidence of positive autocorrelation
+### H1: Evidence of positive autocorrelation
+lmtest::dwtest(model)
+# The p-value is significant, hence we can reject the null hypothesis, first order autocorrelation is present, they are not independent.
+
+
+
+
+### Adding time variable - time ordered effect
+
+index <- seq(from = 1, to = 20)
+
+model_q15_b <- lm(q15$Tickets~ q15$Snowfall + q15$Temperature + index)
+summary(model_q15_b)
+resid <- resid(model_q15_b)
+
+
+
+### test for normality
+
+#informal test
+hist(resid)
+
+#formal test
+## H_0 : Normality is present
+## H_1 : Normality is not present
+
+nortest::ad.test(resid)
+
+# based on the formal and informal test we can conclude that the normality is present since the p value of anderson darling test is not significant we cannot reject the null hypothesis. Hence the data is normal   
+
+
+
+## test for variance
+
+#informal test
+resid_q15_b_sq <- resid^2
+plot(fitted(model_q15_b), resid_q15_b_sq)
+# since the graph doesn't follow any systematic pattern, so there is presence of constant variance
+
+
+# Formal test: KB test
+### Obtain the predicted values of Wages and square them
+pre <- predict(model_q15_b)^2
+
+### Step 2: Run the auxiliary regression
+### Resid_sq = alpha1 + alpha2*PredictedY_sq + vi
+model_q15_b_kb <- lm(resid_q15_b_sq ~ pre)
+summary(model_q15_b_kb)
+# since the p value obtained (alpha2 p value) is not significant, we cannot reject the null hypothesis and conclude that the there is presence of constant variance.
+
+
+#Checking for independence using Durbin Watson
+lmtest::dwtest(model_q15_b)
+# The p-value is insignificant, hence we can not reject the null hypothesis, first order autocorrelation is absent, they are  independent, autocorrelation  got remedied by including the time-ordered effect.
+```
+
+#16
+q16:
+hypothesis:
+\begin{align*}
+H_{0}: \text{There is no first order autocorrelation} \\
+H_{1}:  \text{There is a first order autocorrelation}
+\end{align*}
+c)
+hypothesis:
+\begin{align*}
+H_{0}: \rho = 0 \\
+H_{1}:  \rho \neq 0
+\end{align*}
+
+```{r}
+
+####Part A
+
+q16 <- read.csv("/Users/anchalchaudhary/Downloads/CompensationAndProductivity.csv")
+
+#initial model
+
+wages <- q16$Y
+productivity <- q16$X
+model_q16 <- lm(wages ~ productivity)
+summary(model_q16)
+
+###checking for autocorrelation
+
+#residual by time plot
+resids_q16 <- residuals(model_q16)
+
+timeperiods <- 0:(nrow(q16)-1)
+plot(x=timeperiods, type="b", y=resids_q16, pch=19, 
+     xlab = "Time", ylab = "Residuals", 
+     main = "Time-Sequence Plot")
+
+abline(h=0)
+
+# The plot shows that the residuals don't seem to be randomly distributed. Shows signs of (positive) autocorrelation
+
+# Graphical - Residuals(t) versus Residuals(t-1)
+
+lag.plot(resids_q16, lags = 1, do.lines = FALSE, 
+         diag = FALSE, 
+         main = "Residuals versus Lag 1 Residuals")
+abline(h=0, v=0)
+
+# The plot shows evidence of positive autocorrelation.
+
+
+
+### Durbin-Watson d Statistic
+
+lmtest::dwtest(model_q16)
+
+# The p-value is very small, indicating there is an evidence of
+# positive first-order autocorrelation.
+
+
+### adding time index
+
+i <- c(1:nrow(q16)-1)
+q16_index <- cbind(q16, i )
+View(q16_index)
+
+#initial model
+
+wages_index <- q16_index$Y
+productivity_index <- q16_index$X
+index <- q16_index$i
+model_q16_index <- lm(wages ~ productivity+index)
+summary(model_q16_index)
+
+#checking for autocorrelation
+
+#residual by time plot
+resids_q16_index <- residuals(model_q16_index)
+
+timeperiods <- 0:(nrow(q16)-1)
+plot(x=timeperiods, type="b", y=resids_q16_index, pch=19, 
+     xlab = "Time", ylab = "Residuals", 
+     main = "Time-Sequence Plot")
+
+abline(h=0)
+
+# The plot shows that the residuals don't seem to be randomly distributed. Shows signs of (positive) autocorrelation
+
+# Graphical - Residuals(t) versus Residuals(t-1)
+
+lag.plot(resids_q16_index, lags = 1, do.lines = FALSE, 
+         diag = FALSE, 
+         main = "Residuals versus Lag 1 Residuals")
+abline(h=0, v=0)
+
+# The plot shows evidence of positive autocorrelation.
+
+
+
+### Durbin-Watson d Statistic
+
+lmtest::dwtest(model_q16_index)
+
+# The p-value is very small, indicating there is an evidence of
+# positive first-order autocorrelation.
+
+
+#Interpretation: With the help of residual by time plot, we can infer that there is presence of autocorrelation and with the help of Graphical - Residuals(t) versus Residuals(t-1) we can infer that the autocorrelation is positive.  The Durbin Watson statistic is 0.173 which is close to 0 indicating that the it has positive autocorrelation and the p value for the test is also significant. Hence we can reject the null hypothesis and can firmly conclude that autocorrelation is positive. Also adding the index doesn't change the above mentioned results at all.
+
+####Part b
+
+wages_lag1 <- q16$Y[1:length(q16$Y)-1]
+wages_2nd_row <- q16$Y[-1]
+productivity_2nd_row <- q16$X[-1]
+
+
+### model
+
+model_q16_b <- lm(wages_2nd_row ~ productivity_2nd_row + wages_lag1) 
+summary(model_q16_b)
+
+resids_q16_b <- residuals(model_q16_b)
+
+timeperiods <- 1:(NROW(resids_q16_b))
+plot(x=timeperiods, type="b", y=resids_q16_b, pch=19, 
+     xlab = "Time", ylab = "Residuals", main = "Time-Sequence Plot")
+abline(h=0)
+
+
+lag.plot(resids_q16_b, lags = 1, do.lines = FALSE, 
+         diag = FALSE, 
+         main = "Residuals versus Lag 1 Residuals")
+abline(h=0, v=0)
+
+
+### Using the DW Test -- to be used to calculate h-statistic
+
+lmtest::dwtest(model_q16_b)
+
+
+#Interpretation: With the help of residual by time plot, we can infer that there is presence of autocorrelation and with the help of Graphical - Residuals(t) versus Residuals(t-1) we can infer that the autocorrelation is positive. The Durbin Watson statistic is 1.3765 and the p value for the test is also significant. Hence we can reject the null hypothesis and can firmly conclude that autocorrelation is positive. 
+
+
+####Part c
+
+
+wages_lag1 <- q16$Y[1:length(q16$Y)-1] #yt-1
+wages_2nd_row <- q16$Y[-1] #y without first row.
+productivity_2nd_row <- q16$X[-1] #x without first row
+
+
+### model
+
+model_q16_b <- lm(wages_2nd_row ~ productivity_2nd_row + wages_lag1) 
+summary(model_q16_b)
+
+resids_q16_b <- residuals(model_q16_b)
+
+timeperiods <- 1:(NROW(resids_q16_b))
+plot(x=timeperiods, type="b", y=resids_q16_b, pch=19, 
+     xlab = "Time", ylab = "Residuals", main = "Time-Sequence Plot")
+abline(h=0)
+
+
+lag.plot(resids_q16_b, lags = 1, do.lines = FALSE, 
+         diag = FALSE, 
+         main = "Residuals versus Lag 1 Residuals")
+abline(h=0, v=0)
+
+
+### Using the DW Test -- to be used to calculate h-statistic
+
+dwstat <- lmtest::dwtest(model_q16_b)
+
+
+## Durbin's h using principles
+dwvalue <- dwstat$statistic
+rho_hat <- 1 - dwvalue/2
+n <- NROW(timeperiods)
+output <- summary(model_q16_b)
+var_b2 <- (output$coefficients[2, 2])^2
+durbin_h <- rho_hat*sqrt(n/(1-(n*var_b2)))
+
+### Durbin's h statistic = 2.166 (using principles)
+### H0: rho = 0
+### H1: rho > 0
+
+
+### Reject H0 if h > 1.96
+
+### Since h = 2.166 > 1.96, we reject H0. Interpretation: since we reject the null hypothesis, first order autocorrelation is present
+
+```
+#17
+HYPOTHESIS (normality) :
+
+$$H_0: Normality\ is\ present\ $$
+
+$$H_1: Normality\ is\ not\ present\ $$
+
+
+ 
+HYPOTHESIS (for t test):
+
+$$ H_{0} : \mu_{1} - \mu_{2} = 0 $$
+
+$$ H_{0} : \mu_{1} - \mu_{2} < 0 $$
+HYPOTHESIS:
+
+$$ H_{0}: Dieting\ and\ answering\ questions\ are\ independent $$
+$$ H_{1}: Dieting\ and\ answering\  questions\ are\ dependent $$ 
+
+
+
+```{r}
+
+q17 <- read.csv("/Users/anchalchaudhary/Downloads/DietEffect.csv")
+
+subset_diet <- subset(q17, q17$Diet. == "1")
+subset_nodiet <- subset(q17, q17$Diet. == "2")
+hist(subset_diet$Time)
+hist(subset_nodiet$Time)
+
+shapiro.test(subset_diet$Time)
+shapiro.test(subset_nodiet$Time)
+
+# the p values of the formal normality test are not significant. Hence we cannot reject the null hypothesis and hence they are normal.
+
+var.test(subset_diet$Time,subset_nodiet$Time)
+
+#variances are equal as well
+
+t.test(subset_diet$Time , subset_nodiet$Time, var.equal = TRUE, mu = 0, alternative = 'greater')
+
+#INTERPRETATION: 
+#The p-value is greater than any significance level, thus we cannot reject the null hypothesis. Hence we can conclude that dieting has no adverse impact on the time to solve problems")
+
+
+chisq.test(q17$Diet.,q17$Letters, correct=FALSE)
+
+#the p value is less tham the significance level (0.05) so we can reject the null hypothesis that dieting and answering the questions are dependent.
+
+chisq.test(q17$Diet.,q17$Words, correct=FALSE)
+
+#the p value obtained is not significant. Hence we cannot reject the null hypothesis that means dieting and answering the questions are independent.
+#So, we can conclude that there is no statistical evidence that the dieting has an affect on brain
+```
+#18
+c)
+hypothesis:
+\begin{align*}
+H_{0}: \rho = 0 \\
+H_{1}:  \rho > 0
+\end{align*}
+
+d)
+hypothesis:
+\begin{align*}
+H_{0}: \rho = 0 \\
+H_{1}:  \rho \neq 0
+\end{align*}
+
+f)
+hypothesis:
+\begin{align*}
+H_{0}: \rho = 0 \\
+H_{1}:  \rho > 0
+\end{align*}
+
+
+
+
+
+```{r}
+
+####Part a
+
+
+q18 <- read.csv("/Users/anchalchaudhary/Downloads/Consumption.csv")
+
+
+model_q18 <- lm(q18$con ~ q18$dpi + q18$aaa)
+summary(model_q18)
+
+
+
+####Part b
+
+
+resid_q18 <- residuals(model_q18)
+time <- 1:nrow(q18)
+
+plot(x= time, type="b", y=resid_q18, pch=19,
+     xlab = "Time", ylab = "Residuals",
+     main = "Time-Sequence Plot")
+abline(h=0)
+
+
+#No the plot doesn't look random at all. We see blocks if positive and negative trends. Hence shows signs of positive correlation.
+
+####Part c
+
+
+#Interpretation: 
+
+#The p value obtained is significant. Hence we can reject the null hypothesis and conclude that there is positive autocorrelation in our data.
+
+####Part d
+
+bgtest(model_q18)
+options(scipen=0)
+
+
+#Interpretation: 
+
+#The p value obtained is significant. Hence we can reject the null hypothesis and conclude that there is positive autocorrelation in our data.
+
+
+####Part e
+
+
+
+# Apply the GLS Model: Estimating rho from OLS residuals
+
+resid_q18 <- residuals(model_q18)
+
+#converting to time series object
+ts_resid_q18 <- ts(resid_q18)
+
+lagged_resid_q18 <- ts_resid_q18[1:length(ts_resid_q18)-1] # u(t-1)
+
+resids_start_2nd_row <- ts_resid_q18[-1] # u(t)
+
+model_q18_est_rho <- lm(resids_start_2nd_row ~ 0 + lagged_resid_q18)
+
+summary(model_q18_est_rho)
+
+
+# rho = 0.81669
+rho_hat <- 0.81669
+
+# Creating the differences model
+cons_adj <- q18$con*rho_hat
+dpi_adj <- q18$dpi*rho_hat
+aaa_adj <- q18$aaa*rho_hat
+Y_t_star <- q18$con[-1] - cons_adj[1:length(cons_adj)-1]
+X_t_star_dpi <- q18$dpi[-1] - dpi_adj[1:length(dpi_adj)-1]
+X_t_star_aaa <- q18$aaa[-1] - aaa_adj[1:length(aaa_adj)-1]
+model_18_2 <- lm(Y_t_star ~ X_t_star_dpi + X_t_star_aaa)
+summary(model_18_2)
+
+# Since it is a relatively small sample, we will apply prais-winsten transformation:
+Y_1_star_PW <- sqrt(1-rho_hat^2)*head(q18$con[1])
+X_1_star_PW_1 <- sqrt(1-rho_hat^2)*head(q18$dpi[1])
+X_1_star_PW_2 <- sqrt(1-rho_hat^2)*head(q18$aaa[1])
+
+
+# Creating a data frame containing adjusted values
+df_1 <- data.frame(c1 = Y_t_star, c2 = X_t_star_dpi , c3 = X_t_star_aaa)
+
+
+#adding the top row
+df<- rbind(c(Y_1_star_PW, X_1_star_PW_1, X_1_star_PW_2), df_1)
+
+colnames(df) <- c("cons_adj", "dpi_adj", "aaa_adj")
+
+
+# Now consider this new dataframe of adjusted values
+model_q18_3 <- lm(df$cons_adj ~ df$dpi_adj + df$aaa_adj)
+summary(model_q18_3)
+
+
+# No they are not the same because the GLS coefficient are BLUE where as the OLS coefficients and t-statistics are not blue. Under the GLS we are regressing the transformed variables in the difference form not the original form
+
+
+
+#Interpretation:
+
+#No, they are not the same. This is because the GLS coefficient estimates are BLUE where as the OLS coefficients and t-statistics are not BLUE since under GLS we are regressing the transformed variables in the difference form not the original form.
+
+
+####Part f
+
+# Verify if autocorrelation still exsists in the trandformed model
+
+resid_q18_3 <- residuals(model_q18_3)
+
+lag.plot(resid_q18_3, lags = 1, do.lines = FALSE,
+         diag = FALSE,
+         main = "Residuals versus Lag 1 Residuals")
+abline(h=0, v=0)
+
+# Find DW Statistic
+lmtest::dwtest(model_q18_3, alternative = "greater")
+
+
+
+
+#Interpretation: 
+
+#The p value obtained is not significant at 5% significance level, hence we cannot reject the null hypothesis and hence we can conclude that autocorrelation no longer persist in our data.
+
+
+####Part g
+
+
+
+N <- 62
+m <- floor(0.75 * N^(1/3))
+library(sandwich)
+#NeweyWest test
+NW_VCOV <- NeweyWest(lm(model_q18),
+              lag = m - 1, prewhite = F,
+              adjust = T)
+
+sqrt(diag(NW_VCOV))[2]
+coeftest(model_q18, vcov = NW_VCOV)
+
+
+
+#### Part h
+
+
+#newey-west model
+coeftest(model_q18, vcov = NW_VCOV)
+
+#old output
+summary(model_q18)
+
+
+#Interpretation:
+#Comparing the outputs of the OLS and  Newey-West calculation we see that the coefficients are the same but the p-value for the aaa variable is more significant in the Newey West model when compared to the OLS model
+```
